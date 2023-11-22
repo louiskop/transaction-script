@@ -1,4 +1,5 @@
 import os.path
+import json
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -7,6 +8,9 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
+
+#  TODO: implement verbose mode for setting new payee rules etc...
+#  TODO: implement incomes & transfers (only expenses currently work)
 
 def handleCredentials():
     creds = None
@@ -51,8 +55,8 @@ def main():
             for message in messages:
                 
                 # Mark the message as read by removing the UNREAD label
-                # msg_id = message['id'] 
-                # service.users().messages().modify(userId='me', id=msg_id, body={'removeLabelIds': ['UNREAD']}).execute()
+                msg_id = message['id'] 
+                service.users().messages().modify(userId='me', id=msg_id, body={'removeLabelIds': ['UNREAD']}).execute()
 
                 # extract data out of message
                 msg = service.users().messages().get(userId='me', id=message['id']).execute()
@@ -63,8 +67,10 @@ def main():
                     "beneficiary": msg.split("Merchant : ")[1].split(" Reserved")[0],
                     "amount": msg.split("Reserved : ")[1].split(" Available")[0]
                 }
-                print(transaction);
-                # call actual api
+                
+
+                print(json.dumps(transaction, indent=4));
+                # TODO: call actual api
 
 
     except HttpError as error:
