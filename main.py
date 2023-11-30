@@ -61,14 +61,38 @@ def main():
                 service.users().messages().modify(userId='me', id=msg_id, body={'removeLabelIds': ['UNREAD']}).execute()
 
                 # extract data out of message
-                msg = service.users().messages().get(userId='me', id=message['id']).execute()
-                msg = msg["snippet"]
-                transaction = {
-                    "account": msg.split("Account : ")[1].split(" Date")[0],
-                    "type": msg.split("Transaction: ")[1].split(" Merchant")[0],
-                    "beneficiary": msg.split("Merchant : ")[1].split(" Reserved")[0],
-                    "amount": msg.split("Reserved : ")[1].split(" Available")[0]
-                }
+                msgObj = service.users().messages().get(userId='me', id=message['id']).execute()
+                msg = msgObj["snippet"]
+
+                # check transaction type by subject
+                for header in msgObj["payload"]["headers"]:
+                    if header["name"] == "Subject":
+                        subject = header["value"]
+                        transType = subject.split("-")[1].strip()
+
+                if (transType == "Purchase"):
+
+                    transaction = {
+                        "account": msg.split("Account : ")[1].split(" Date")[0],
+                        "type": msg.split("Transaction: ")[1].split(" Merchant")[0],
+                        "beneficiary": msg.split("Merchant : ")[1].split(" Reserved")[0],
+                        "amount": msg.split("Reserved : ")[1].split(" Available")[0]
+                    }
+
+                elif (transType == "Deposit"):
+
+                    # check if transfer or deposit
+                    if (msg.split("Transaction: ")[1].split(" Reference")[0] == "SETTLEMENT CENTRE - DIGITAL TRANSF CR"):
+                        transaction = {
+                            "account": msg.split("Account : ")[1].split(" Date")[0],
+                            "type": "Transfer",
+                            "amount": msg.split("Amount :")[1].split(" Available")[0],
+                        }
+                    else:
+                        print("exogenous deposit")
+                        transaction = {
+                            "type": "Deposit"
+                        }
 
 
                 # print transactions
