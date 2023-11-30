@@ -7,6 +7,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+import web_bot
+
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
 #  TODO: implement verbose mode for setting new payee rules etc...
@@ -39,7 +41,7 @@ def main():
     creds = handleCredentials()
 
     try:
-        
+
         # Filter by unread and banking address
         query = 'from:notifyme@absa.co.za AND is:unread'
 
@@ -53,9 +55,9 @@ def main():
         else:
             print('[+] Found ' + str(len(messages)) + ' transactions')
             for message in messages:
-                
+
                 # Mark the message as read by removing the UNREAD label
-                msg_id = message['id'] 
+                msg_id = message['id']
                 service.users().messages().modify(userId='me', id=msg_id, body={'removeLabelIds': ['UNREAD']}).execute()
 
                 # extract data out of message
@@ -67,11 +69,13 @@ def main():
                     "beneficiary": msg.split("Merchant : ")[1].split(" Reserved")[0],
                     "amount": msg.split("Reserved : ")[1].split(" Available")[0]
                 }
-                
 
+
+                # print transactions
                 print(json.dumps(transaction, indent=4));
-                # TODO: call actual api
 
+                # input transactions using selenium
+                # web_bot.add_transactions(transaction)
 
     except HttpError as error:
         # Print any errors
